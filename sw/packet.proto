@@ -1,0 +1,7 @@
+message UdpCmd {
+	required sfixed32 x_Left = 1;
+	required sfixed32 x_Right = 2;
+	required sfixed32 y_Left = 3;
+	required sfixed32 y_Right = 4;
+	required sfixed32 timestamp = 5;
+}
