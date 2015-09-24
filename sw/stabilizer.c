@@ -23,7 +23,7 @@ void StabilizerTask(void *pvParameters) {
     {
         stabilizer_ticks++;
         // 500Hz
-        vTaskDelayUntil(&lastWakeTime, FREQ2TIX(SAMPLEFREQ));
+        vTaskDelayUntil(&lastWakeTime, FREQ2TIX(STABILIZER_FREQ));
         dtick = lastWakeTime - dtick;
         if (dtick != 2)
             UART_PRINT("ticks elapsed %d\r\n", dtick);
@@ -36,9 +36,10 @@ void StabilizerTask(void *pvParameters) {
         );
 #endif
 
+        ahrs_update(gyro3xF.x, gyro3xF.y, gyro3xF.z, accl3xF.x, accl3xF.y, accl3xF.z);
+
         // 250Hz
         if (++divider >= 2) {
-            ahrs_update(gyro3xF.x, gyro3xF.y, gyro3xF.z, accl3xF.x, accl3xF.y, accl3xF.z);
             ahrs_get_rpy(&roll, &pitch, &yaw);
 
 #ifdef SHOW_RPY

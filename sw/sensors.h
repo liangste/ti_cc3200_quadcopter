@@ -10,6 +10,12 @@ struct float3x {
     float z;
 };
 
+struct short3x {
+    short x;
+    short y;
+    short z;
+};
+
 void sensors_init(int*);
 void sensors_update(struct float3x*, struct float3x*);
 #define FREQ2TIX(X) ((unsigned int)((configTICK_RATE_HZ/X)))

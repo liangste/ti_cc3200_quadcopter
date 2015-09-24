@@ -51,8 +51,9 @@
 
 #define UART_PRINT              Report
 #define PI                      3.14159265
-#define SAMPLEFREQ              500.0f      // sample frequency in Hz
-#define FUSION_UPDATE_DT        (float)(1.0 / (SAMPLEFREQ / 2.0)) // 250hz
+#define STABILIZER_FREQ         500.0f
+#define FUSION_FREQ             500.0f      // sample frequency in Hz
+#define FUSION_DT               (float)(1.0 / (FUSION_FREQ / 1.0)) // 250hz
 
 
 uint32_t stabilizer_ticks;
