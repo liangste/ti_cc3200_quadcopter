@@ -1,5 +1,7 @@
 # Hardware Overview
 
+Photo Gallery [here](https://goo.gl/photos/aTtyzAjJARxAQHJD8)
+
 ## Introduction
 
 The hardware is designed using [KiCAD](http://kicad-pcb.org/) and manufactured with [OSI Park](https://oshpark.com/) PCB manufacturing facility. Build version for the KiCAD used is 2014-12-04 bZR 5312.
