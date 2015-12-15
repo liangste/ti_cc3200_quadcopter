@@ -1,22 +1,15 @@
 #include <QApplication>
 #include <QPushButton>
+#include <syslog.h>
+#include "joystick.h"
 
 using namespace std;
 
 int main(int argc, char **argv)
 {
-	QApplication app(argc, argv);
+  QApplication app(argc, argv);
+  QWidget window;
+  window.show();
 
-	QWidget window;
-	window.setFixedSize(100, 50);
-
-	QPushButton button("Hello World!", &window);
-	button.setGeometry(10, 10, 80, 30);
-
-	button.setText("My text");
-	button.setToolTip("A tooltip");
-
-	window.show();
-
-	return app.exec();
+  return app.exec();
 }

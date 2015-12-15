@@ -1,5 +1,6 @@
 set(joystick_files
   joystick.cc
-  joystick.h)
+  xbox360ctlr.cc
+)
 
 add_library(joystick ${joystick_files})
