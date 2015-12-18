@@ -41,13 +41,9 @@
 
 #include "pinmux.h"
 #include "led.h"
-#include "sensors.h"
 #include "wifi.h"
-#include "pid.h"
 #include "packet.h"
-#include "stabilizer.h"
 #include "motors.h"
-#include "ahrs.h"
 
 #define UART_PRINT              Report
 #define PI                      3.14159265

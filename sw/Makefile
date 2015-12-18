@@ -50,12 +50,8 @@ ${BINDIR}:
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/main.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/wifi.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/led.o
-${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/pid.o
-${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/sensors.o
-${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/stabilizer.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/motors.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/pinmux.o
-${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/ahrs.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/gpio_if.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/uart_if.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/i2c_if.o
