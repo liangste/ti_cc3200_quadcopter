@@ -51,6 +51,9 @@
 #define FUSION_FREQ             500.0f      // sample frequency in Hz
 #define FUSION_DT               (float)(1.0 / (FUSION_FREQ / 1.0)) // 250hz
 
+#define INFO(X)                 (UART_PRINT("[INFO] " X "\r\n"))
+#define NOTE(X)                 (UART_PRINT("       " X "\r\n"))
+#define FAIL(X)                 (UART_PRINT("[FAIL] " X "\r\n"))
 
 uint32_t stabilizer_ticks;
 uint32_t wifi_task_ticks;

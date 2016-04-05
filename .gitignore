@@ -1,2 +1,6 @@
 *.user
 build*
+*.o
+*.d
+*.axf
+*.bin

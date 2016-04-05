@@ -50,6 +50,7 @@ ${BINDIR}:
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/main.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/wifi.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/led.o
+${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/mpu6050.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/motors.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/pinmux.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/gpio_if.o

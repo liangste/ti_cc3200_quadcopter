@@ -96,7 +96,10 @@ int main()
 
 		init_status = 0;
 		led_init();
-		//sensors_init(&init_status);
+		if (!mpu6050_init(&init_status)) {
+			FAIL("Failed to initialize MPU 6050 Sensor");
+			goto LOOP_FOREVER;
+		}
 		motors_init();
 		//pid_init();
 
@@ -126,6 +129,7 @@ int main()
 		vTaskStartScheduler();
 		*/
 
+LOOP_FOREVER:
 		while(1) {};
 		return 0;
 }
