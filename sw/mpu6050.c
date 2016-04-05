@@ -1,10 +1,3 @@
-/*
-    - file name gyro.c is very misleading, this is because the only i2c devices
-    working on main2.0 was the gyroscope...
-    - But this file actually does general i2c functions including an
-    accelerometer
-*/
-
 // Standard includes
 #include <stdio.h>
 #include <string.h>
@@ -47,32 +40,49 @@
     Defines
 /////////////////////////////////////////////////////////////////////////////*/
 
-#define I2C_BASE                I2CA0_BASE
-#define UART_PRINT              Report
-#define GYRO_I2C_ADDR           0x68
-#define ACCL_I2C_ADDR           0x1D
+#define MPU6050_I2C_ADDR        0x68
 #define I2C_BUF_SIZE            256
 #define WHOAMI_VAL              0x68
 #define WHOAMI_REG              0x75
+#define PWR_MGMT_1_REG          0x6B
+#define PWR_MGMT_2_DEFAULT_VAL  0x40
+#define PWR_MGMT_2_REG          0x6C
 #define PI                      3.14159265
 
 /*/////////////////////////////////////////////////////////////////////////////
     Variables
 /////////////////////////////////////////////////////////////////////////////*/
 
-unsigned char g_i2c_buf[I2C_BUF_SIZE];
+unsigned char g_i2c_read_buf[I2C_BUF_SIZE];
+unsigned char g_i2c_write_buf[I2C_BUF_SIZE];
 
 /*/////////////////////////////////////////////////////////////////////////////
     Function Prototypes
 /////////////////////////////////////////////////////////////////////////////*/
 
-void sensors_init();
-void sensors_reset();
-void sensors_configure();
-
 /*/////////////////////////////////////////////////////////////////////////////
     Function Definitions
 /////////////////////////////////////////////////////////////////////////////*/
+
+bool mpu6050_reset() {
+    unsigned u;
+
+    if (SUCCESS < I2C_IF_Open(I2C_MASTER_MODE_FST)) {
+        FAIL("Failed to open I2C in Fast Mode");
+        return false;
+    }
+
+    u = 0;
+    g_i2c_write_buf[u++] = PWR_MGMT_1_REG;
+    g_i2c_write_buf[u++] = 0x80; // reset
+
+    if (SUCCESS < I2C_IF_Write(MPU6050_I2C_ADDR, &g_i2c_write_buf, u, 1)) {
+        FAIL("I2C_IF_ReadFrom Failed");
+        return false;
+    }
+
+    return true;
+}
 
 bool mpu6050_detect() {
     unsigned char reg_addr = WHOAMI_REG;
@@ -82,15 +92,15 @@ bool mpu6050_detect() {
         return false;
     }
 
-    if (SUCCESS < I2C_IF_ReadFrom(GYRO_I2C_ADDR, &reg_addr, 1, &g_i2c_buf, 1)) {
+    if (SUCCESS < I2C_IF_ReadFrom(MPU6050_I2C_ADDR, &reg_addr, 1, &g_i2c_read_buf, 1)) {
         FAIL("I2C_IF_ReadFrom Failed");
         return false;
     }
 
-    if (g_i2c_buf[0] == WHOAMI_VAL) {
-        INFO("Found MPU 6050 Sensor");
+    if (g_i2c_read_buf[0] == WHOAMI_VAL) {
+        INFO("WHOAMI_VAL Matches");
     } else {
-        FAIL("Could not find MPU 6050 Sensor!");
+        FAIL("WHOAMI_VAL does not match");
         return false;
     }
 
@@ -99,6 +109,11 @@ bool mpu6050_detect() {
 
 bool mpu6050_init() {
     INFO("Initializing MPU 6050 Sensor");
+
+    if (!mpu6050_reset()) {
+        FAIL("Could not reset MPU 6050 Sensor");
+        return false;
+    }
 
     if (!mpu6050_detect()) {
         FAIL("Could not find MPU 6050 Sensor");
