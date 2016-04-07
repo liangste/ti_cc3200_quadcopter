@@ -37,34 +37,6 @@
 #include "config.h"
 
 /*/////////////////////////////////////////////////////////////////////////////
-    Defines
-/////////////////////////////////////////////////////////////////////////////*/
-
-#define MPU6050_I2C_ADDR        0x68
-#define I2C_BUF_SIZE            256
-
-#define WHOAMI_VAL              0x68
-#define PWR_MGMT_2_DEFAULT_VAL  0x40
-#define SENSOR_DATA_SIZE        14
-#define TRIM_TOLERANCE          14.0
-
-// registers
-#define SELF_TEST_X             0x0D
-#define SELF_TEST_Y             0x0E
-#define SELF_TEST_Z             0x0F
-#define SELF_TEST_A             0x10
-#define GYRO_CONFIG             0x1B
-#define ACCEL_CONFIG            0x1C
-#define SENSOR_DATA_BASE        0x3B
-#define WHOAMI_REG              0x75
-#define PWR_MGMT_1_REG          0x6B
-#define PWR_MGMT_2_REG          0x6C
-
-// accoridng to section 4 of "MPU-6000/MPU-6050 Register Maps and Description"
-#define CALC_FT_G(a)            (25.0 * 131 * pow(1.046, a - 1))
-#define CALC_FT_A(a)            (4096 * .34 * pow(0.92/0.34, (a - 1) / 30.0))
-
-/*/////////////////////////////////////////////////////////////////////////////
     Variables
 /////////////////////////////////////////////////////////////////////////////*/
 
@@ -150,8 +122,8 @@ bool mpu6050_selftest() {
     float d_xa, d_ya, d_za;
     float d_xg, d_yg, d_zg;
     unsigned char reg_addr;
-    int32_t ax, ay, az;
-    int32_t gx, gy, gz;
+    sensor_value_t sensor_value_old;
+    sensor_value_t sensor_value_new;
 
     if (SUCCESS < I2C_IF_Open(I2C_MASTER_MODE_FST)) {
         FAIL("Failed to open I2C in Fast Mode");
@@ -213,18 +185,7 @@ bool mpu6050_selftest() {
     // add small delay for self-test to complete
     MAP_UtilsDelay((90*80*1000)); // 30msec
 
-    reg_addr = SENSOR_DATA_BASE;
-    if (SUCCESS < I2C_IF_ReadFrom(MPU6050_I2C_ADDR, &reg_addr, 1, &g_i2c_read_buf, SENSOR_DATA_SIZE)) {
-        FAIL("I2C_IF_ReadFrom 14-byte Failed");
-        return false;
-    }
-
-    ax = _sign_extend((g_i2c_read_buf[0] << 8) | g_i2c_read_buf[1]);
-    ay = _sign_extend((g_i2c_read_buf[2] << 8) | g_i2c_read_buf[3]);
-    az = _sign_extend((g_i2c_read_buf[4] << 8) | g_i2c_read_buf[5]);
-    gx = _sign_extend((g_i2c_read_buf[8] << 8) | g_i2c_read_buf[9]);
-    gy = _sign_extend((g_i2c_read_buf[10] << 8) | g_i2c_read_buf[11]);
-    gz = _sign_extend((g_i2c_read_buf[12] << 8) | g_i2c_read_buf[13]);
+    mpu6050_update_readings(&sensor_value_old);
 
     // turn off self test
     u = 0;
@@ -245,57 +206,29 @@ bool mpu6050_selftest() {
 
     MAP_UtilsDelay((90*80*1000)); // 30msec
 
-    reg_addr = SENSOR_DATA_BASE;
-    if (SUCCESS < I2C_IF_ReadFrom(MPU6050_I2C_ADDR, &reg_addr, 1, &g_i2c_read_buf, SENSOR_DATA_SIZE)) {
-        FAIL("I2C_IF_ReadFrom 14-byte Failed");
-        return false;
-    }
+    mpu6050_update_readings(&sensor_value_new);
 
-    ax -= _sign_extend((g_i2c_read_buf[0] << 8) | g_i2c_read_buf[1]);
-    ay -= _sign_extend((g_i2c_read_buf[2] << 8) | g_i2c_read_buf[3]);
-    az -= _sign_extend((g_i2c_read_buf[4] << 8) | g_i2c_read_buf[5]);
-    gx -= _sign_extend((g_i2c_read_buf[8] << 8) | g_i2c_read_buf[9]);
-    gy -= _sign_extend((g_i2c_read_buf[10] << 8) | g_i2c_read_buf[11]);
-    gz -= _sign_extend((g_i2c_read_buf[12] << 8) | g_i2c_read_buf[13]);
+    sensor_value_old.ax -= sensor_value_new.ax;
+    sensor_value_old.ay -= sensor_value_new.ay;
+    sensor_value_old.az -= sensor_value_new.az;
+    sensor_value_old.gx -= sensor_value_new.gx;
+    sensor_value_old.gy -= sensor_value_new.gy;
+    sensor_value_old.gz -= sensor_value_new.gz;
 
-/*
-    UART_PRINT("ax = %d\r\n", ax);
-    UART_PRINT("ay = %d\r\n", ay);
-    UART_PRINT("az = %d\r\n", az);
-    UART_PRINT("gx = %d\r\n", gx);
-    UART_PRINT("gy = %d\r\n", gy);
-    UART_PRINT("gz = %d\r\n", gz);
+    d_xa = (sensor_value_old.ax - ft_xa) / ft_xa * 100.0;
+    d_ya = (sensor_value_old.ay - ft_ya) / ft_ya * 100.0;
+    d_za = (sensor_value_old.az - ft_za) / ft_za * 100.0;
+    d_xg = (sensor_value_old.gx - ft_xg) / ft_xg * 100.0;
+    d_yg = (sensor_value_old.gy - ft_yg) / ft_yg * 100.0;
+    d_zg = (sensor_value_old.gz - ft_zg) / ft_zg * 100.0;
 
-    UART_PRINT("ft_xa = %f\r\n", ft_xa);
-    UART_PRINT("ft_ya = %f\r\n", ft_ya);
-    UART_PRINT("ft_za = %f\r\n", ft_za);
-    UART_PRINT("ft_xg = %f\r\n", ft_xg);
-    UART_PRINT("ft_yg = %f\r\n", ft_yg);
-    UART_PRINT("ft_zg = %f\r\n", ft_zg);
-*/
-
-    d_xa = (ax - ft_xa) / ft_xa * 100.0;
-    d_ya = (ay - ft_ya) / ft_ya * 100.0;
-    d_za = (az - ft_za) / ft_za * 100.0;
-    d_xg = (gx - ft_xg) / ft_xg * 100.0;
-    d_yg = (gy - ft_yg) / ft_yg * 100.0;
-    d_zg = (gz - ft_zg) / ft_zg * 100.0;
-
-/*
-    UART_PRINT("d_xa = %f\r\n", d_xa);
-    UART_PRINT("d_ya = %f\r\n", d_ya);
-    UART_PRINT("d_za = %f\r\n", d_za);
-    UART_PRINT("d_xg = %f\r\n", d_xg);
-    UART_PRINT("d_yg = %f\r\n", d_yg);
-    UART_PRINT("d_zg = %f\r\n", d_zg);
-*/
-
+    INFO("Testing for self test tolerances");
     if (!_check_tolerance("Accelerometer.x-axis", d_xa)
         || !_check_tolerance("Accelerometer.y-axis", d_ya)
         || !_check_tolerance("Accelerometer.z-axis", d_za)
-        || !_check_tolerance("Gyroscope.x-axis", d_xa)
-        || !_check_tolerance("Gyroscope.y-axis", d_ya)
-        || !_check_tolerance("Gyroscope.z-axis", d_za)) {
+        || !_check_tolerance("Gyroscope.x-axis", d_xg)
+        || !_check_tolerance("Gyroscope.y-axis", d_yg)
+        || !_check_tolerance("Gyroscope.z-axis", d_zg)) {
         FAIL("Tolerance check failed");
         return false;
     }
@@ -303,7 +236,26 @@ bool mpu6050_selftest() {
     return true;
 }
 
+bool mpu6050_update_readings(sensor_value_t* val) {
+    uint8_t reg_addr;
+
+    reg_addr = SENSOR_DATA_BASE;
+    if (SUCCESS < I2C_IF_ReadFrom(MPU6050_I2C_ADDR, &reg_addr, 1, &g_i2c_read_buf, SENSOR_DATA_SIZE)) {
+        FAIL("I2C_IF_ReadFrom 14-byte Failed");
+        return false;
+    }
+
+    val->ax = (g_i2c_read_buf[0] << 8) | g_i2c_read_buf[1];
+    val->ay = (g_i2c_read_buf[2] << 8) | g_i2c_read_buf[3];
+    val->az = (g_i2c_read_buf[4] << 8) | g_i2c_read_buf[5];
+    val->gx = (g_i2c_read_buf[8] << 8) | g_i2c_read_buf[9];
+    val->gy = (g_i2c_read_buf[10] << 8) | g_i2c_read_buf[11];
+    val->gz = (g_i2c_read_buf[12] << 8) | g_i2c_read_buf[13];
+}
+
 bool mpu6050_init() {
+    unsigned u;
+
     INFO("Initializing MPU 6050 Sensor");
 
     if (!mpu6050_reset()) {
@@ -321,6 +273,29 @@ bool mpu6050_init() {
         return false;
     }
 
+    u = 0;
+    g_i2c_write_buf[u++] = SMPLRT_DIV_REG;
+    g_i2c_write_buf[u++] = 0x07; // div = 7 => yields 1kHz sample rate
+    g_i2c_write_buf[u++] = 0x00; // config LPF to have highest BW
+    g_i2c_write_buf[u++] = 0x08; // (+/-) 500 degree/sec
+    g_i2c_write_buf[u++] = 0x08; // (+/-) 4g
+    if (SUCCESS < I2C_IF_Write(MPU6050_I2C_ADDR, &g_i2c_write_buf, u, 1)) {
+        FAIL("I2C_IF_Write to PWR_MGMT_1_REG Failed");
+        return false;
+    }
+
+    MAP_UtilsDelay((90*80*1000)); // 30msec
+
+    sensor_value_t sensor_value;
+    mpu6050_update_readings(&sensor_value);
+
+    INFO("Showing current MPU6050 sensor values");
+    UART_PRINT("accel.x = %fg\r\n", sensor_value.ax / ACCEL_SENSITIVITY);
+    UART_PRINT("accel.y = %fg\r\n", sensor_value.ay / ACCEL_SENSITIVITY);
+    UART_PRINT("accel.z = %fg\r\n", sensor_value.az / ACCEL_SENSITIVITY);
+    UART_PRINT("gyro.x = %f deg/s\r\n", sensor_value.gx / GYRO_SENSITIVITY);
+    UART_PRINT("gyro.y = %f deg/s\r\n", sensor_value.gy / GYRO_SENSITIVITY);
+    UART_PRINT("gyro.z = %f deg/s\r\n", sensor_value.gz / GYRO_SENSITIVITY);
 
     return true;
 }
