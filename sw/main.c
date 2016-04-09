@@ -101,33 +101,17 @@ int main()
 			goto LOOP_FOREVER;
 		}
 		motors_init();
-		//pid_init();
-
-		/*
-		if (init_status) {
-				UART_PRINT("[X] Init failed\r\n");
-				LOOP_FOREVER();
-		}
 
 		wifiDataLock = xSemaphoreCreateMutex();
 		wifiDataAvailable = false;
 
 		VStartSimpleLinkSpawnTask(SPAWN_TASK_PRIORITY);
 
-		xTaskCreate( WifiIndicatorTask, NULL,
-						OSI_STACK_SIZE, (void *) NULL, 5, NULL );
-		xTaskCreate( SensorIndicatorTask, NULL,
-						OSI_STACK_SIZE, (void *) NULL, 5, NULL );
-		xTaskCreate( CommIndicatorTask, NULL,
-						OSI_STACK_SIZE, (void *) NULL, 5, NULL );
-		xTaskCreate( WifiConnectTask, NULL,
-						OSI_STACK_SIZE, (void*) NULL, 5, NULL );
-		xTaskCreate( StabilizerTask, NULL,
-						OSI_STACK_SIZE, (void *) NULL, 5, NULL );
+		xTaskCreate(StabilizerTask, NULL,
+			OSI_STACK_SIZE, (void *) NULL, 5, NULL);
 
-		UART_PRINT("Starting FreeRTOS Scheduling\r\n");
+		INFO("Starting FreeRTOS Scheduling");
 		vTaskStartScheduler();
-		*/
 
 LOOP_FOREVER:
 		while(1) {};

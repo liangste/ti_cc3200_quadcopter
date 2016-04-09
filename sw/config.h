@@ -44,6 +44,7 @@
 #include "wifi.h"
 #include "packet.h"
 #include "motors.h"
+#include "stabilizer.h"
 
 #define UART_PRINT              Report
 #define PI                      3.14159265
