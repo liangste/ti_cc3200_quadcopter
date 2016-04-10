@@ -11,13 +11,16 @@ void StabilizerTask(void *params) {
     INFO("Cmd format");
     NOTE("  1 - get raw sensor readings");
 
+    last_wake_time = xTaskGetTickCount();
+
 	while(1)
 	{
-        vTaskDelayUntil(&last_wake_time, 1/portTICK_PERIOD_MS); // 1kHz
+        vTaskDelayUntil(&last_wake_time, 100/portTICK_PERIOD_MS/3); // 30hz
 
         cmd_length = GetCmd(cmd, 128);
         if (cmd_length > 0 && cmd_length < 128) {
             if (cmd[0] == '1') {
+                led_toggle(ORANGE);
                 mpu6050_update_readings(&sensor_value);
                 UART_PRINT("%f %f %f %f %f %f\r\n",
                 sensor_value.ax / ACCEL_SENSITIVITY,
@@ -28,5 +31,6 @@ void StabilizerTask(void *params) {
                 sensor_value.gz / GYRO_SENSITIVITY);
             }
         }
+
 	}
 }
