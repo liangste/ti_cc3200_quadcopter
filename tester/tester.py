@@ -12,6 +12,7 @@ import sys
 import serial
 import string
 import numpy
+import math
 from PyQt4 import QtGui, QtCore
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -43,6 +44,11 @@ class SensorPlot(FigureCanvas):
         self.g_z_data = numpy.empty(g_sensor_plot_points)
         self.g_z_data.fill(0)
 
+        self.pitch_data = numpy.empty(g_sensor_plot_points)
+        self.pitch_data.fill(0)
+        self.roll_data = numpy.empty(g_sensor_plot_points)
+        self.roll_data.fill(0)
+
         plt.subplot(4, 1, 1)
         self.ax_plot, = plt.plot(common_x_data, self.a_x_data, 'r')
         self.ay_plot, = plt.plot(common_x_data, self.a_y_data, 'g')
@@ -61,15 +67,16 @@ class SensorPlot(FigureCanvas):
         plt.ylim([-500, 500])
 
         plt.subplot(4, 1, 3)
-        self.gx_plot, = plt.plot(common_x_data, self.g_x_data, 'r')
-        plt.title("placeholder")
+        self.pitch_plot, = plt.plot(common_x_data, self.pitch_data)
+        plt.title("Pitch")
+        plt.ylim([-math.pi, math.pi])
 
         plt.subplot(4, 1, 4)
-        self.gx_plot, = plt.plot(common_x_data, self.g_x_data, 'r')
-        plt.title("placeholder")
+        self.roll_plot, = plt.plot(common_x_data, self.roll_data)
+        plt.title("Roll")
+        plt.ylim([-math.pi, math.pi])
 
-
-    def InsertAccelReadings(self, x, y, z, g_x, g_y, g_z):
+    def InsertAccelReadings(self, x, y, z, g_x, g_y, g_z, pitch, roll):
 
         # update accelerometer data
         self.a_x_data = numpy.roll(self.a_x_data, -1)
@@ -96,6 +103,16 @@ class SensorPlot(FigureCanvas):
         self.g_z_data = numpy.roll(self.g_z_data, -1)
         self.g_z_data[g_sensor_plot_points - 1] = g_z
         self.gz_plot.set_ydata(self.g_z_data)
+
+        # pitch data
+        self.pitch_data = numpy.roll(self.pitch_data, -1)
+        self.pitch_data[g_sensor_plot_points - 1] = pitch
+        self.pitch_plot.set_ydata(self.pitch_data)
+
+        # roll data
+        self.roll_data = numpy.roll(self.roll_data, -1)
+        self.roll_data[g_sensor_plot_points - 1] = roll
+        self.roll_plot.set_ydata(self.roll_data)
 
         self.figure.canvas.draw()
 
@@ -185,7 +202,7 @@ class Tester(QtGui.QWidget):
             line = self.serial_port.readline().rstrip("\n\r").lstrip("\n\r")
             #self.debug_console.append(line)
             sensor_values = string.split(line, ' ')
-            if len(sensor_values) == 6:
+            if len(sensor_values) >= 6:
                 #self.debug_console.append("z = " + sensor_values[2])
                 self.serial_port.write(str(self.throttle_value) + "\r")
                 try:
@@ -195,7 +212,9 @@ class Tester(QtGui.QWidget):
                         float(sensor_values[2]),
                         float(sensor_values[3]),
                         float(sensor_values[4]),
-                        float(sensor_values[5]))
+                        float(sensor_values[5]),
+                        float(sensor_values[6]),
+                        float(sensor_values[7]))
                 except Exception as e:
                     pass
 
