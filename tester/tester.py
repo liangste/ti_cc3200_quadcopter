@@ -43,24 +43,31 @@ class SensorPlot(FigureCanvas):
         self.g_z_data = numpy.empty(g_sensor_plot_points)
         self.g_z_data.fill(0)
 
-        plt.subplot(2, 1, 1)
+        plt.subplot(4, 1, 1)
         self.ax_plot, = plt.plot(common_x_data, self.a_x_data, 'r')
         self.ay_plot, = plt.plot(common_x_data, self.a_y_data, 'g')
         self.az_plot, = plt.plot(common_x_data, self.a_z_data, 'b')
         plt.legend(['x', 'y', 'z'])
-
         plt.title("accelerometer readings")
         plt.ylabel("(g)")
         plt.ylim([-4, 4])
 
-        plt.subplot(2, 1, 2)
+        plt.subplot(4, 1, 2)
         self.gx_plot, = plt.plot(common_x_data, self.g_x_data, 'r')
         self.gy_plot, = plt.plot(common_x_data, self.g_y_data, 'g')
         self.gz_plot, = plt.plot(common_x_data, self.g_z_data, 'b')
-
         plt.title("gyroscope readings")
         plt.ylabel('(degrees/s)')
         plt.ylim([-500, 500])
+
+        plt.subplot(4, 1, 3)
+        self.gx_plot, = plt.plot(common_x_data, self.g_x_data, 'r')
+        plt.title("placeholder")
+
+        plt.subplot(4, 1, 4)
+        self.gx_plot, = plt.plot(common_x_data, self.g_x_data, 'r')
+        plt.title("placeholder")
+
 
     def InsertAccelReadings(self, x, y, z, g_x, g_y, g_z):
 
@@ -121,10 +128,13 @@ class Tester(QtGui.QWidget):
         self.control_btn_layout.addWidget(self.start_button)
         self.control_btn_layout.addWidget(self.stop_button)
 
+        self.main_control_widget = QtGui.QWidget()
         self.main_control_layout.addWidget(self.debug_console)
         self.main_control_layout.addLayout(self.control_btn_layout)
+        self.main_control_widget.setLayout(self.main_control_layout)
+        self.main_control_widget.setFixedWidth(360)
 
-        self.top_level_layout.addLayout(self.main_control_layout)
+        self.top_level_layout.addWidget(self.main_control_widget)
         self.top_level_layout.addWidget(self.sensor_reading_plot)
         self.top_level_layout.addWidget(self.throttle_slider)
 
@@ -134,7 +144,7 @@ class Tester(QtGui.QWidget):
         self.com_connected = False
         self.throttle_value = 0
 
-        self.resize(800, 480)
+        self.resize(1440, 960)
         self.show()
 
     def StartTest(self):
@@ -155,7 +165,7 @@ class Tester(QtGui.QWidget):
 
             self.started = True
 
-        self.serial_port.write("1\r")
+        self.serial_port.write("0\r")
 
     def StopTest(self):
 
@@ -165,6 +175,7 @@ class Tester(QtGui.QWidget):
             self.serial_timer.stop()
 
             if self.com_connected:
+                self.serial_port.write("0\r")
                 self.serial_port.close()
                 self.com_connected = False
 
@@ -176,7 +187,7 @@ class Tester(QtGui.QWidget):
             sensor_values = string.split(line, ' ')
             if len(sensor_values) == 6:
                 #self.debug_console.append("z = " + sensor_values[2])
-                self.serial_port.write("1\r")
+                self.serial_port.write(str(self.throttle_value) + "\r")
                 try:
                     self.sensor_reading_plot.InsertAccelReadings(
                         float(sensor_values[0]),
@@ -191,7 +202,6 @@ class Tester(QtGui.QWidget):
     def ThrottleChanged(self, value):
 
         self.throttle_value = value
-        self.debug_console.append("Setting throggle to " + str(value))
 
 if __name__ == '__main__':
 

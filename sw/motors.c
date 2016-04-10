@@ -58,6 +58,11 @@ void motors_init() {
     MAP_TimerEnable(TIMERA3_BASE,TIMER_B);
 
     MAP_GPIOPinWrite(GPIOA3_BASE, GPIO_PIN_4, GPIO_PIN_4); // enable AND-gate bypass
+
+    motors_set_m1(0);
+    motors_set_m2(0);
+    motors_set_m3(0);
+    motors_set_m4(0);
 }
 
 void motors_set_m1(uint32_t val) {

@@ -95,20 +95,19 @@ int main()
 		UART_PRINT("========================================\r\n");
 
 		init_status = 0;
+		motors_init();
 		led_init();
 		if (!mpu6050_init(&init_status)) {
 			FAIL("Failed to initialize MPU 6050 Sensor");
 			goto LOOP_FOREVER;
 		}
-		motors_init();
 
 		wifiDataLock = xSemaphoreCreateMutex();
 		wifiDataAvailable = false;
 
 		VStartSimpleLinkSpawnTask(SPAWN_TASK_PRIORITY);
 
-		xTaskCreate(StabilizerTask, NULL,
-			OSI_STACK_SIZE, (void *) NULL, 5, NULL);
+		xTaskCreate(SerialControlTask, NULL, OSI_STACK_SIZE, (void *) NULL, 5, NULL);
 
 		INFO("Starting FreeRTOS Scheduling");
 		vTaskStartScheduler();
