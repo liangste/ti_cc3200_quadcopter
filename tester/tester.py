@@ -4,6 +4,10 @@
 # if missing packages, install with pip.exe, unless it's PyQt4, which you must
 # install by downloading one of its install binaries
 
+# cygwin install - Python/python-setuptools
+# install pyqt4 through cygwin installer
+# install other missing packages through pip
+
 import sys
 import serial
 import string
@@ -13,38 +17,133 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
+g_sensor_plot_points = 500
+
+class SensorPlot(FigureCanvas):
+    """ Plot class that handles sensor readings from the quadcopter and display
+        them """
+
+    def __init__(self):
+        self.figure = plt.figure()
+        super(SensorPlot, self).__init__(self.figure)
+
+        common_x_data = numpy.linspace(0, 1, g_sensor_plot_points)
+
+        self.a_x_data = numpy.empty(g_sensor_plot_points)
+        self.a_x_data.fill(0)
+        self.a_y_data = numpy.empty(g_sensor_plot_points)
+        self.a_y_data.fill(0)
+        self.a_z_data = numpy.empty(g_sensor_plot_points)
+        self.a_z_data.fill(0)
+
+        self.g_x_data = numpy.empty(g_sensor_plot_points)
+        self.g_x_data.fill(0)
+        self.g_y_data = numpy.empty(g_sensor_plot_points)
+        self.g_y_data.fill(0)
+        self.g_z_data = numpy.empty(g_sensor_plot_points)
+        self.g_z_data.fill(0)
+
+        plt.subplot(2, 1, 1)
+        self.ax_plot, = plt.plot(common_x_data, self.a_x_data, 'r')
+        self.ay_plot, = plt.plot(common_x_data, self.a_y_data, 'g')
+        self.az_plot, = plt.plot(common_x_data, self.a_z_data, 'b')
+        plt.legend(['x', 'y', 'z'])
+
+        plt.title("accelerometer readings")
+        plt.ylabel("(g)")
+        plt.ylim([-4, 4])
+
+        plt.subplot(2, 1, 2)
+        self.gx_plot, = plt.plot(common_x_data, self.g_x_data, 'r')
+        self.gy_plot, = plt.plot(common_x_data, self.g_y_data, 'g')
+        self.gz_plot, = plt.plot(common_x_data, self.g_z_data, 'b')
+
+        plt.title("gyroscope readings")
+        plt.ylabel('(degrees/s)')
+        plt.ylim([-500, 500])
+
+    def InsertAccelReadings(self, x, y, z, g_x, g_y, g_z):
+
+        # update accelerometer data
+        self.a_x_data = numpy.roll(self.a_x_data, -1)
+        self.a_x_data[g_sensor_plot_points - 1] = x
+        self.ax_plot.set_ydata(self.a_x_data)
+
+        self.a_y_data = numpy.roll(self.a_y_data, -1)
+        self.a_y_data[g_sensor_plot_points - 1] = y
+        self.ay_plot.set_ydata(self.a_y_data)
+
+        self.a_z_data = numpy.roll(self.a_z_data, -1)
+        self.a_z_data[g_sensor_plot_points - 1] = z
+        self.az_plot.set_ydata(self.a_z_data)
+
+        # update gyro data
+        self.g_x_data = numpy.roll(self.g_x_data, -1)
+        self.g_x_data[g_sensor_plot_points - 1] = g_x
+        self.gx_plot.set_ydata(self.g_x_data)
+
+        self.g_y_data = numpy.roll(self.g_y_data, -1)
+        self.g_y_data[g_sensor_plot_points - 1] = g_y
+        self.gy_plot.set_ydata(self.g_y_data)
+
+        self.g_z_data = numpy.roll(self.g_z_data, -1)
+        self.g_z_data[g_sensor_plot_points - 1] = g_z
+        self.gz_plot.set_ydata(self.g_z_data)
+
+        self.figure.canvas.draw()
+
+
 class Tester(QtGui.QWidget):
     """ Main Tester Program for our quadcopter """
 
     def __init__(self):
         super(Tester, self).__init__()
 
-        start_button = QtGui.QPushButton("Start", self)
-        start_button.clicked.connect(self.Start)
-        start_button.move(20, 450)
+        self.start_button = QtGui.QPushButton("Start")
+        self.start_button.clicked.connect(self.StartTest)
 
-        start_button = QtGui.QPushButton("Stop", self)
-        start_button.clicked.connect(self.Stop)
-        start_button.move(100, 450)
+        self.stop_button = QtGui.QPushButton("Stop")
+        self.stop_button.clicked.connect(self.StopTest)
 
-        self.qtb = QtGui.QTextBrowser(self)
-        self.qtb.resize(250, 440)
-        self.qtb.show()
+        self.debug_console = QtGui.QTextBrowser()
+
+        self.throttle_slider = QtGui.QSlider(QtCore.Qt.Vertical)
+        self.throttle_slider.valueChanged[int].connect(self.ThrottleChanged)
+        self.throttle_slider.setTickInterval(10)
+        self.throttle_slider.setTickPosition(QtGui.QSlider.TicksRight)
+
+        self.sensor_reading_plot = SensorPlot()
+
+        self.main_control_layout = QtGui.QVBoxLayout()
+        self.top_level_layout = QtGui.QHBoxLayout()
+        self.control_btn_layout = QtGui.QHBoxLayout()
+
+        self.control_btn_layout.addWidget(self.start_button)
+        self.control_btn_layout.addWidget(self.stop_button)
+
+        self.main_control_layout.addWidget(self.debug_console)
+        self.main_control_layout.addLayout(self.control_btn_layout)
+
+        self.top_level_layout.addLayout(self.main_control_layout)
+        self.top_level_layout.addWidget(self.sensor_reading_plot)
+        self.top_level_layout.addWidget(self.throttle_slider)
+
+        self.setLayout(self.top_level_layout)
+
+        self.started = False
+        self.com_connected = False
+        self.throttle_value = 0
 
         self.resize(800, 480)
         self.show()
 
-        fig = plt.figure()
+    def StartTest(self):
 
-        self.started = False
-        self.com_connected = False
-
-    def Start(self):
         if not self.started:
-            self.qtb.append("Starting ...")
+            self.debug_console.append("Starting ...")
         try:
             self.serial_port = serial.Serial(port="COM4", baudrate=115200, timeout=1)
-            self.qtb.append("Connected to Serial Port")
+            self.debug_console.append("Connected to Serial Port")
             self.com_connected = True
             self.serial_port.flushInput()
         except Exception as e:
@@ -56,26 +155,46 @@ class Tester(QtGui.QWidget):
 
             self.started = True
 
-    def Stop(self):
+        self.serial_port.write("1\r")
+
+    def StopTest(self):
+
         if self.started:
-            self.qtb.append("Stopping ...")
+            self.debug_console.append("Stopping ...")
             self.started = False
             self.serial_timer.stop()
 
-            self.serial_port.flush()
-            self.serial_port.close()
-            self.com_connected = False
+            if self.com_connected:
+                self.serial_port.close()
+                self.com_connected = False
 
     def SerialRead(self):
+
         if self.com_connected:
-            self.serial_port.write("1\n")
-            line = self.serial_port.readline().rstrip('\n').rstrip('\r')
+            line = self.serial_port.readline().rstrip("\n\r").lstrip("\n\r")
+            #self.debug_console.append(line)
             sensor_values = string.split(line, ' ')
             if len(sensor_values) == 6:
-                #self.qtb.append(line)
-                pass
+                #self.debug_console.append("z = " + sensor_values[2])
+                self.serial_port.write("1\r")
+                try:
+                    self.sensor_reading_plot.InsertAccelReadings(
+                        float(sensor_values[0]),
+                        float(sensor_values[1]),
+                        float(sensor_values[2]),
+                        float(sensor_values[3]),
+                        float(sensor_values[4]),
+                        float(sensor_values[5]))
+                except Exception as e:
+                    pass
+
+    def ThrottleChanged(self, value):
+
+        self.throttle_value = value
+        self.debug_console.append("Setting throggle to " + str(value))
 
 if __name__ == '__main__':
+
     app = QtGui.QApplication(sys.argv)
     t = Tester()
     sys.exit(app.exec_())
