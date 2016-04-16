@@ -49,6 +49,16 @@ class SensorPlot(FigureCanvas):
         self.roll_data = numpy.empty(g_sensor_plot_points)
         self.roll_data.fill(0)
 
+        self.gyro_pitch_data = numpy.empty(g_sensor_plot_points)
+        self.gyro_pitch_data.fill(0)
+        self.gyro_roll_data = numpy.empty(g_sensor_plot_points)
+        self.gyro_roll_data.fill(0)
+
+        self.kalman_pitch_data = numpy.empty(g_sensor_plot_points)
+        self.kalman_pitch_data.fill(0)
+        self.kalman_roll_data = numpy.empty(g_sensor_plot_points)
+        self.kalman_roll_data.fill(0)
+
         plt.subplot(4, 1, 1)
         self.ax_plot, = plt.plot(common_x_data, self.a_x_data, 'r')
         self.ay_plot, = plt.plot(common_x_data, self.a_y_data, 'g')
@@ -62,21 +72,28 @@ class SensorPlot(FigureCanvas):
         self.gx_plot, = plt.plot(common_x_data, self.g_x_data, 'r')
         self.gy_plot, = plt.plot(common_x_data, self.g_y_data, 'g')
         self.gz_plot, = plt.plot(common_x_data, self.g_z_data, 'b')
+        plt.legend(['x', 'y', 'z'])
         plt.title("gyroscope readings")
         plt.ylabel('(degrees/s)')
         plt.ylim([-500, 500])
 
         plt.subplot(4, 1, 3)
-        self.pitch_plot, = plt.plot(common_x_data, self.pitch_data)
-        plt.title("Pitch")
+        self.pitch_plot, = plt.plot(common_x_data, self.pitch_data, 'r')
+        self.gyro_pitch_plot, = plt.plot(common_x_data, self.gyro_pitch_data, 'g')
+        self.kalman_pitch_plot, = plt.plot(common_x_data, self.kalman_pitch_data, 'b')
+        plt.legend(['accel_only', 'gyro_only', 'kalman'])
+        plt.title("Pitch (rad)")
         plt.ylim([-math.pi, math.pi])
 
         plt.subplot(4, 1, 4)
-        self.roll_plot, = plt.plot(common_x_data, self.roll_data)
-        plt.title("Roll")
+        self.roll_plot, = plt.plot(common_x_data, self.roll_data, 'r')
+        self.gyro_roll_plot, = plt.plot(common_x_data, self.gyro_roll_data, 'g')
+        self.kalman_roll_plot, = plt.plot(common_x_data, self.kalman_roll_data, 'b')
+        plt.legend(['accel_only', 'gyro_only', 'kalman'])
+        plt.title("Roll (rad)")
         plt.ylim([-math.pi, math.pi])
 
-    def InsertAccelReadings(self, x, y, z, g_x, g_y, g_z, pitch, roll):
+    def InsertAccelReadings(self, x, y, z, g_x, g_y, g_z, pitch, roll, g_pitch, g_roll, k_pitch, k_roll):
 
         # update accelerometer data
         self.a_x_data = numpy.roll(self.a_x_data, -1)
@@ -109,10 +126,26 @@ class SensorPlot(FigureCanvas):
         self.pitch_data[g_sensor_plot_points - 1] = pitch
         self.pitch_plot.set_ydata(self.pitch_data)
 
+        self.gyro_pitch_data = numpy.roll(self.gyro_pitch_data, -1)
+        self.gyro_pitch_data[g_sensor_plot_points - 1] = g_pitch
+        self.gyro_pitch_plot.set_ydata(self.gyro_pitch_data)
+
+        self.kalman_pitch_data = numpy.roll(self.kalman_pitch_data, -1)
+        self.kalman_pitch_data[g_sensor_plot_points - 1] = k_pitch
+        self.kalman_pitch_plot.set_ydata(self.kalman_pitch_data)
+
         # roll data
         self.roll_data = numpy.roll(self.roll_data, -1)
         self.roll_data[g_sensor_plot_points - 1] = roll
         self.roll_plot.set_ydata(self.roll_data)
+
+        self.gyro_roll_data = numpy.roll(self.gyro_roll_data, -1)
+        self.gyro_roll_data[g_sensor_plot_points - 1] = g_roll
+        self.gyro_roll_plot.set_ydata(self.gyro_roll_data)
+
+        self.kalman_roll_data = numpy.roll(self.kalman_roll_data, -1)
+        self.kalman_roll_data[g_sensor_plot_points - 1] = k_roll
+        self.kalman_roll_plot.set_ydata(self.kalman_roll_data)
 
         self.figure.canvas.draw()
 
@@ -131,10 +164,8 @@ class Tester(QtGui.QWidget):
 
         self.debug_console = QtGui.QTextBrowser()
 
-        self.throttle_slider = QtGui.QSlider(QtCore.Qt.Vertical)
-        self.throttle_slider.valueChanged[int].connect(self.ThrottleChanged)
-        self.throttle_slider.setTickInterval(10)
-        self.throttle_slider.setTickPosition(QtGui.QSlider.TicksRight)
+        self.throttle_spinbox = QtGui.QSpinBox()
+        self.throttle_spinbox.valueChanged.connect(self.ThrottleChanged)
 
         self.sensor_reading_plot = SensorPlot()
 
@@ -149,11 +180,11 @@ class Tester(QtGui.QWidget):
         self.main_control_layout.addWidget(self.debug_console)
         self.main_control_layout.addLayout(self.control_btn_layout)
         self.main_control_widget.setLayout(self.main_control_layout)
+        self.main_control_layout.addWidget(self.throttle_spinbox)
         self.main_control_widget.setFixedWidth(360)
 
         self.top_level_layout.addWidget(self.main_control_widget)
         self.top_level_layout.addWidget(self.sensor_reading_plot)
-        self.top_level_layout.addWidget(self.throttle_slider)
 
         self.setLayout(self.top_level_layout)
 
@@ -214,7 +245,11 @@ class Tester(QtGui.QWidget):
                         float(sensor_values[4]),
                         float(sensor_values[5]),
                         float(sensor_values[6]),
-                        float(sensor_values[7]))
+                        float(sensor_values[7]),
+                        float(sensor_values[8]),
+                        float(sensor_values[9]),
+                        float(sensor_values[10]),
+                        float(sensor_values[11]))
                 except Exception as e:
                     pass
 
