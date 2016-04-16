@@ -22,9 +22,10 @@ void SerialControlTask(void *params) {
     kalman_reset(&kf_pitch);
     kalman_reset(&kf_roll);
 
-    float q_angle = 0.001f;
-    float q_bias = 0.003f;
-    float r_measure = 0.03f;
+    // these are parameters that require tuning per hardware platform
+    float q_angle = 0.0001f; // decrease this if estimate is slow
+    float q_bias = 1.0f; // increate this is estimate is drifting
+    float r_measure = 0.003f; // decrease this if estimate is slow
 
     // set kalman filter variance values
     kalman_set_variances(&kf_pitch, q_angle, q_bias, r_measure);

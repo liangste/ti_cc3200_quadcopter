@@ -16,6 +16,7 @@ import math
 from PyQt4 import QtGui, QtCore
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.ticker import MultipleLocator
 import matplotlib.pyplot as plt
 
 g_sensor_plot_points = 500
@@ -59,38 +60,44 @@ class SensorPlot(FigureCanvas):
         self.kalman_roll_data = numpy.empty(g_sensor_plot_points)
         self.kalman_roll_data.fill(0)
 
-        plt.subplot(4, 1, 1)
+        plt.subplot(4, 1, 1, axisbg='gray')
+        plt.grid(True)
         self.ax_plot, = plt.plot(common_x_data, self.a_x_data, 'r')
         self.ay_plot, = plt.plot(common_x_data, self.a_y_data, 'g')
         self.az_plot, = plt.plot(common_x_data, self.a_z_data, 'b')
-        plt.legend(['x', 'y', 'z'])
-        plt.title("accelerometer readings")
+        plt.legend(['x', 'y', 'z'], bbox_to_anchor=(1.1, 0.5))
+        plt.title("accelerometer readings, x, y, z")
         plt.ylabel("(g)")
         plt.ylim([-4, 4])
 
-        plt.subplot(4, 1, 2)
+        plt.subplot(4, 1, 2, axisbg='gray')
+        plt.grid(True)
         self.gx_plot, = plt.plot(common_x_data, self.g_x_data, 'r')
         self.gy_plot, = plt.plot(common_x_data, self.g_y_data, 'g')
         self.gz_plot, = plt.plot(common_x_data, self.g_z_data, 'b')
-        plt.legend(['x', 'y', 'z'])
-        plt.title("gyroscope readings")
+        plt.legend(['x', 'y', 'z'], bbox_to_anchor=(1.1, 0.5))
+        plt.title("gyroscope readings, x, y, z")
         plt.ylabel('(degrees/s)')
         plt.ylim([-500, 500])
 
-        plt.subplot(4, 1, 3)
-        self.pitch_plot, = plt.plot(common_x_data, self.pitch_data, 'r')
-        self.gyro_pitch_plot, = plt.plot(common_x_data, self.gyro_pitch_data, 'g')
-        self.kalman_pitch_plot, = plt.plot(common_x_data, self.kalman_pitch_data, 'b')
-        plt.legend(['accel_only', 'gyro_only', 'kalman'])
-        plt.title("Pitch (rad)")
+        plt.subplot(4, 1, 3, axisbg='gray')
+        plt.grid(True)
+        self.pitch_plot, = plt.plot(common_x_data, self.pitch_data, 'm')
+        self.gyro_pitch_plot, = plt.plot(common_x_data, self.gyro_pitch_data, 'c')
+        self.kalman_pitch_plot, = plt.plot(common_x_data, self.kalman_pitch_data, 'k')
+        plt.legend(['a', 'g', 'k'], bbox_to_anchor=(1.1, 0.5))
+        plt.title("Pitch, accelerometer, gyroscope, kalman")
+        plt.ylabel('(radians)')
         plt.ylim([-math.pi, math.pi])
 
-        plt.subplot(4, 1, 4)
-        self.roll_plot, = plt.plot(common_x_data, self.roll_data, 'r')
-        self.gyro_roll_plot, = plt.plot(common_x_data, self.gyro_roll_data, 'g')
-        self.kalman_roll_plot, = plt.plot(common_x_data, self.kalman_roll_data, 'b')
-        plt.legend(['accel_only', 'gyro_only', 'kalman'])
-        plt.title("Roll (rad)")
+        plt.subplot(4, 1, 4, axisbg='gray')
+        plt.grid(True)
+        self.roll_plot, = plt.plot(common_x_data, self.roll_data, 'm')
+        self.gyro_roll_plot, = plt.plot(common_x_data, self.gyro_roll_data, 'c')
+        self.kalman_roll_plot, = plt.plot(common_x_data, self.kalman_roll_data, 'k')
+        plt.legend(['a', 'g', 'k'], bbox_to_anchor=(1.1, 0.5))
+        plt.title("Roll, accelerometer, gyroscope, kalman")
+        plt.ylabel('(radians)')
         plt.ylim([-math.pi, math.pi])
 
     def InsertAccelReadings(self, x, y, z, g_x, g_y, g_z, pitch, roll, g_pitch, g_roll, k_pitch, k_roll):
@@ -164,23 +171,39 @@ class Tester(QtGui.QWidget):
 
         self.debug_console = QtGui.QTextBrowser()
 
+        self.throttle_label = QtGui.QLabel()
+        self.throttle_label.setText("Throttle value")
+        self.throttle_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.throttle_spinbox = QtGui.QSpinBox()
+        self.throttle_spinbox.setMaximum(100)
+        self.throttle_spinbox.setMinimum(0)
+        self.throttle_spinbox.setSingleStep(5)
+        self.throttle_spinbox.setKeyboardTracking(False)
         self.throttle_spinbox.valueChanged.connect(self.ThrottleChanged)
 
         self.sensor_reading_plot = SensorPlot()
 
+        # layouts
         self.main_control_layout = QtGui.QVBoxLayout()
         self.top_level_layout = QtGui.QHBoxLayout()
         self.control_btn_layout = QtGui.QHBoxLayout()
+        self.throttle_layout = QtGui.QHBoxLayout()
 
+        # layout insertions
         self.control_btn_layout.addWidget(self.start_button)
         self.control_btn_layout.addWidget(self.stop_button)
 
+        self.throttle_layout.addWidget(self.throttle_label)
+        self.throttle_layout.addWidget(self.throttle_spinbox)
+
+        # main control widget
         self.main_control_widget = QtGui.QWidget()
+
         self.main_control_layout.addWidget(self.debug_console)
         self.main_control_layout.addLayout(self.control_btn_layout)
+        self.main_control_layout.addLayout(self.throttle_layout)
+
         self.main_control_widget.setLayout(self.main_control_layout)
-        self.main_control_layout.addWidget(self.throttle_spinbox)
         self.main_control_widget.setFixedWidth(360)
 
         self.top_level_layout.addWidget(self.main_control_widget)
@@ -188,9 +211,15 @@ class Tester(QtGui.QWidget):
 
         self.setLayout(self.top_level_layout)
 
+        # member variables
         self.started = False
         self.com_connected = False
         self.throttle_value = 0
+
+        # set color
+        pallet = QtGui.QPalette()
+        pallet.setColor(self.backgroundRole(), QtCore.Qt.darkGray)
+        self.setPalette(pallet)
 
         self.resize(1440, 960)
         self.show()
@@ -231,10 +260,8 @@ class Tester(QtGui.QWidget):
 
         if self.com_connected:
             line = self.serial_port.readline().rstrip("\n\r").lstrip("\n\r")
-            #self.debug_console.append(line)
             sensor_values = string.split(line, ' ')
             if len(sensor_values) >= 6:
-                #self.debug_console.append("z = " + sensor_values[2])
                 self.serial_port.write(str(self.throttle_value) + "\r")
                 try:
                     self.sensor_reading_plot.InsertAccelReadings(
@@ -254,11 +281,12 @@ class Tester(QtGui.QWidget):
                     pass
 
     def ThrottleChanged(self, value):
-
+        self.debug_console.append("Throttle changed to " + str(value))
         self.throttle_value = value
 
 if __name__ == '__main__':
 
     app = QtGui.QApplication(sys.argv)
     t = Tester()
+    t.setWindowTitle("cc3200 quadcopter tester")
     sys.exit(app.exec_())
