@@ -42,6 +42,12 @@ typedef struct {
     int16_t gz;
 } sensor_value_t;
 
+typedef struct {
+    double pitch;
+    double roll;
+    double yaw;
+} angles_t;
+
 // reset MPU 6050
 bool mpu6050_reset();
 
@@ -56,5 +62,8 @@ bool mpu6050_init();
 
 // update acceleromter and gyroscope readings
 bool mpu6050_update_readings(sensor_value_t* val);
+
+// calculate angles based only on accelerometer readings
+void mpu6050_calculate_accel_angles(sensor_value_t*, angles_t*);
 
 #endif // __MPU_6050_H__

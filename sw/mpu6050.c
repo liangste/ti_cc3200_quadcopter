@@ -301,3 +301,11 @@ bool mpu6050_init() {
 
     return true;
 }
+
+void mpu6050_calculate_accel_angles(sensor_value_t* sensor_value, angles_t* angles) {
+    double z2 = pow((double) sensor_value->az, 2.0);
+    double sqrt_x2_z2 = pow((double) sensor_value->ax, 2.0) + z2;
+    double sqrt_y2_z2 = pow((double) sensor_value->ay, 2.0) + z2;
+    angles->pitch = atan2((double) sensor_value->ay, sqrt(sqrt_x2_z2));
+    angles->roll = atan2((double) -sensor_value->ax, sqrt(sqrt_y2_z2));
+}

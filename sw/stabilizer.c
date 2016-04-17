@@ -24,12 +24,7 @@ void SerialControlTask(void *params) {
 
     mpu6050_update_readings(&sensor_value);
 
-    // calculate pitch and row from accelerometer
-    double z2 = pow((double) sensor_value.az, 2.0);
-    double sqrt_x2_z2 = pow((double) sensor_value.ax, 2.0) + z2;
-    double sqrt_y2_z2 = pow((double) sensor_value.ay, 2.0) + z2;
-    angles.pitch = atan2((double) sensor_value.ay, sqrt(sqrt_x2_z2));
-    angles.roll = atan2((double) -sensor_value.ax, sqrt(sqrt_y2_z2));
+    mpu6050_calculate_accel_angles(&sensor_value, &angles);
 
     kalman_reset(&kf_pitch, angles.pitch);
     kalman_reset(&kf_roll, angles.roll);
@@ -62,20 +57,18 @@ void SerialControlTask(void *params) {
 
         mpu6050_update_readings(&sensor_value);
 
-        // calculate pitch and row from accelerometer
-        z2 = pow((double) sensor_value.az, 2.0);
-        sqrt_x2_z2 = pow((double) sensor_value.ax, 2.0) + z2;
-        sqrt_y2_z2 = pow((double) sensor_value.ay, 2.0) + z2;
-        angles.pitch = atan2((double) sensor_value.ay, sqrt(sqrt_x2_z2));
-        angles.roll = atan2((double) -sensor_value.ax, sqrt(sqrt_y2_z2));
+        mpu6050_calculate_accel_angles(&sensor_value, &angles);
 
-        gyro_angles.pitch += (double) sensor_value.gx / GYRO_SENSITIVITY * dt;
-        gyro_angles.roll += (double) sensor_value.gy / GYRO_SENSITIVITY * dt;
+        double gyro_pitch_rate = (double) sensor_value.gx / GYRO_SENSITIVITY;
+        double gyro_roll_rate = (double) sensor_value.gy / GYRO_SENSITIVITY;
 
-        kalman_update(&kf_pitch, angles.pitch, sensor_value.gx / GYRO_SENSITIVITY, dt);
-        kalman_update(&kf_roll, angles.roll, sensor_value.gy / GYRO_SENSITIVITY, dt);
+        gyro_angles.pitch += gyro_pitch_rate * dt;
+        gyro_angles.roll += gyro_roll_rate * dt;
 
-        pid_update(&pitch_pid, desired_pitch, kalman_get_angle(&kf_pitch), sensor_value.gx / GYRO_SENSITIVITY);
+        kalman_update(&kf_pitch, angles.pitch, gyro_pitch_rate, dt);
+        kalman_update(&kf_roll, angles.roll, gyro_roll_rate, dt);
+
+        pid_update(&pitch_pid, desired_pitch, kalman_get_angle(&kf_pitch), gyro_pitch_rate);
 
         cmd_length = GetCmd(cmd, 10);
         if (cmd_length > 0 && cmd_length < 10) {
