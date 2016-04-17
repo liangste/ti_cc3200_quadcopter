@@ -57,6 +57,7 @@ ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/timer_if.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/packet.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/stabilizer.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/kf.o
+${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/pid.o
 ${BINDIR}/${APPLICATION}.axf: ${OBJDIR}/startup_${COMPILER}.o
 ${BINDIR}/${APPLICATION}.axf: ${ROOT}/simplelink/${COMPILER}/${BINDIR}/libsimplelink.a
 ${BINDIR}/${APPLICATION}.axf: ${ROOT}/driverlib/${COMPILER}/${BINDIR}/libdriver.a

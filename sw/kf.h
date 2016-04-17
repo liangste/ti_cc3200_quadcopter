@@ -10,7 +10,7 @@ typedef struct kalman_filter {
 } kalman_filter_t;
 
 // reset the kalman filter
-void kalman_reset(kalman_filter_t*);
+void kalman_reset(kalman_filter_t*, float angle);
 
 // set variances to kalman filter
 void kalman_set_variances(kalman_filter_t*, float q_angle, float q_bias, float r_measure);

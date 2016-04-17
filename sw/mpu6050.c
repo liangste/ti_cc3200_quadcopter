@@ -275,8 +275,10 @@ bool mpu6050_init() {
 
     u = 0;
     g_i2c_write_buf[u++] = SMPLRT_DIV_REG;
-    g_i2c_write_buf[u++] = 0x07; // div = 7 => yields 1kHz sample rate
-    g_i2c_write_buf[u++] = 0x00; // config LPF to have highest BW
+    //g_i2c_write_buf[u++] = 0x07; // div = 7 => yields 1kHz sample rate
+    //g_i2c_write_buf[u++] = 0x00; // config LPF to have highest BW
+    g_i2c_write_buf[u++] = 0x00; // div = 1 => yields 1kHz sample rate
+    g_i2c_write_buf[u++] = 0x06; // config LPF to have lowest BW
     g_i2c_write_buf[u++] = 0x08; // (+/-) 500 degree/sec
     g_i2c_write_buf[u++] = 0x08; // (+/-) 4g
     if (SUCCESS < I2C_IF_Write(MPU6050_I2C_ADDR, &g_i2c_write_buf, u, 1)) {

@@ -60,7 +60,16 @@ class SensorPlot(FigureCanvas):
         self.kalman_roll_data = numpy.empty(g_sensor_plot_points)
         self.kalman_roll_data.fill(0)
 
-        plt.subplot(4, 1, 1, axisbg='gray')
+        self.throttle_m1 = numpy.empty(g_sensor_plot_points)
+        self.throttle_m1.fill(0)
+        self.throttle_m2 = numpy.empty(g_sensor_plot_points)
+        self.throttle_m2.fill(0)
+        self.throttle_m3 = numpy.empty(g_sensor_plot_points)
+        self.throttle_m3.fill(0)
+        self.throttle_m4 = numpy.empty(g_sensor_plot_points)
+        self.throttle_m4.fill(0)
+
+        plt.subplot(5, 1, 1, axisbg='gray')
         plt.grid(True)
         self.ax_plot, = plt.plot(common_x_data, self.a_x_data, 'r')
         self.ay_plot, = plt.plot(common_x_data, self.a_y_data, 'g')
@@ -70,7 +79,7 @@ class SensorPlot(FigureCanvas):
         plt.ylabel("(g)")
         plt.ylim([-4, 4])
 
-        plt.subplot(4, 1, 2, axisbg='gray')
+        plt.subplot(5, 1, 2, axisbg='gray')
         plt.grid(True)
         self.gx_plot, = plt.plot(common_x_data, self.g_x_data, 'r')
         self.gy_plot, = plt.plot(common_x_data, self.g_y_data, 'g')
@@ -80,7 +89,7 @@ class SensorPlot(FigureCanvas):
         plt.ylabel('(degrees/s)')
         plt.ylim([-500, 500])
 
-        plt.subplot(4, 1, 3, axisbg='gray')
+        plt.subplot(5, 1, 3, axisbg='gray')
         plt.grid(True)
         self.pitch_plot, = plt.plot(common_x_data, self.pitch_data, 'm')
         self.gyro_pitch_plot, = plt.plot(common_x_data, self.gyro_pitch_data, 'c')
@@ -90,7 +99,7 @@ class SensorPlot(FigureCanvas):
         plt.ylabel('(radians)')
         plt.ylim([-math.pi, math.pi])
 
-        plt.subplot(4, 1, 4, axisbg='gray')
+        plt.subplot(5, 1, 4, axisbg='gray')
         plt.grid(True)
         self.roll_plot, = plt.plot(common_x_data, self.roll_data, 'm')
         self.gyro_roll_plot, = plt.plot(common_x_data, self.gyro_roll_data, 'c')
@@ -100,7 +109,24 @@ class SensorPlot(FigureCanvas):
         plt.ylabel('(radians)')
         plt.ylim([-math.pi, math.pi])
 
-    def InsertAccelReadings(self, x, y, z, g_x, g_y, g_z, pitch, roll, g_pitch, g_roll, k_pitch, k_roll):
+        plt.subplot(5, 1, 5, axisbg='gray')
+        plt.grid(True)
+        self.throttle_m1_plot, = plt.plot(common_x_data, self.throttle_m1, 'r')
+        self.throttle_m2_plot, = plt.plot(common_x_data, self.throttle_m2, 'g')
+        self.throttle_m3_plot, = plt.plot(common_x_data, self.throttle_m3, 'b')
+        self.throttle_m4_plot, = plt.plot(common_x_data, self.throttle_m4, 'k')
+        plt.legend(['m1', 'm2', 'm3', 'm4'], bbox_to_anchor=(1.1, 0.5))
+        plt.title("Motor throttle values after PID correction")
+        plt.ylabel('[0, 255]')
+        plt.ylim([0, 260])
+
+    def InsertAccelReadings(self,
+                            x, y, z,
+                            g_x, g_y, g_z,
+                             pitch, roll,
+                             g_pitch, g_roll,
+                             k_pitch, k_roll,
+                             m1, m2, m3, m4):
 
         # update accelerometer data
         self.a_x_data = numpy.roll(self.a_x_data, -1)
@@ -154,6 +180,23 @@ class SensorPlot(FigureCanvas):
         self.kalman_roll_data[g_sensor_plot_points - 1] = k_roll
         self.kalman_roll_plot.set_ydata(self.kalman_roll_data)
 
+        # throttle data
+        self.throttle_m1 = numpy.roll(self.throttle_m1, -1)
+        self.throttle_m1[g_sensor_plot_points - 1] = m1
+        self.throttle_m1_plot.set_ydata(self.throttle_m1)
+
+        self.throttle_m2 = numpy.roll(self.throttle_m2, -1)
+        self.throttle_m2[g_sensor_plot_points - 1] = m2
+        self.throttle_m2_plot.set_ydata(self.throttle_m2)
+
+        self.throttle_m3 = numpy.roll(self.throttle_m3, -1)
+        self.throttle_m3[g_sensor_plot_points - 1] = m3
+        self.throttle_m3_plot.set_ydata(self.throttle_m3)
+
+        self.throttle_m4 = numpy.roll(self.throttle_m4, -1)
+        self.throttle_m4[g_sensor_plot_points - 1] = m4
+        self.throttle_m4_plot.set_ydata(self.throttle_m4)
+
         self.figure.canvas.draw()
 
 
@@ -175,9 +218,9 @@ class Tester(QtGui.QWidget):
         self.throttle_label.setText("Throttle value")
         self.throttle_label.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
         self.throttle_spinbox = QtGui.QSpinBox()
-        self.throttle_spinbox.setMaximum(100)
+        self.throttle_spinbox.setMaximum(255)
         self.throttle_spinbox.setMinimum(0)
-        self.throttle_spinbox.setSingleStep(5)
+        self.throttle_spinbox.setSingleStep(15)
         self.throttle_spinbox.setKeyboardTracking(False)
         self.throttle_spinbox.valueChanged.connect(self.ThrottleChanged)
 
@@ -204,7 +247,7 @@ class Tester(QtGui.QWidget):
         self.main_control_layout.addLayout(self.throttle_layout)
 
         self.main_control_widget.setLayout(self.main_control_layout)
-        self.main_control_widget.setFixedWidth(360)
+        self.main_control_widget.setFixedWidth(280)
 
         self.top_level_layout.addWidget(self.main_control_widget)
         self.top_level_layout.addWidget(self.sensor_reading_plot)
@@ -276,7 +319,11 @@ class Tester(QtGui.QWidget):
                         float(sensor_values[8]),
                         float(sensor_values[9]),
                         float(sensor_values[10]),
-                        float(sensor_values[11]))
+                        float(sensor_values[11]),
+                        float(sensor_values[12]),
+                        float(sensor_values[13]),
+                        float(sensor_values[14]),
+                        float(sensor_values[15]))
                 except Exception as e:
                     pass
 

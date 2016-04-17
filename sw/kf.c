@@ -1,9 +1,9 @@
 #include "kf.h"
 
 // reset the kalman filter
-void kalman_reset(kalman_filter_t* kf)
+void kalman_reset(kalman_filter_t* kf, float angle)
 {
-    kf->angle = 0.0f;
+    kf->angle = angle;
     kf->bias = 0.0f;
 
     kf->P[0][0] = 0.0f;

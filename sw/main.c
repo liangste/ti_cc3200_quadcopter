@@ -113,6 +113,10 @@ int main()
 		vTaskStartScheduler();
 
 LOOP_FOREVER:
+		motors_set_m1(0);
+		motors_set_m2(0);
+		motors_set_m3(0);
+		motors_set_m4(0);
 		while(1) {};
 		return 0;
 }

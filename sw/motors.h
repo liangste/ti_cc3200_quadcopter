@@ -5,11 +5,17 @@
 
 #define TIMER_INTERVAL_RELOAD   19890
 #define DUTYCYCLE_GRANULARITY   78
+#define MAX_THROTTLE_VALUE 255
+#define MIN_THROTTLE_VALUE 0
 
 void motors_init();
-void motors_set_m1(uint32_t);
-void motors_set_m2(uint32_t);
-void motors_set_m3(uint32_t);
-void motors_set_m4(uint32_t);
+
+uint8_t motors_correct_throttle(int32_t);
+
+// set throttle values for motor, [0, 255]
+void motors_set_m1(uint8_t);
+void motors_set_m2(uint8_t);
+void motors_set_m3(uint8_t);
+void motors_set_m4(uint8_t);
 
 #endif
