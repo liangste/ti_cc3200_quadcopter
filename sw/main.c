@@ -4,6 +4,8 @@
 #define mainDELAY_LOOP_COUNT    100000
 
 int init_status;
+extern bool g_wifiConnected;
+extern bool g_wifiDataAvailable;
 
 extern void(* const g_pfnVectors[])(void);
 
@@ -74,9 +76,9 @@ void CommIndicatorTask(void *pvParameters) {
 		while(1)
 		{
 				comm_indicator_ticks++;
-				if (g_commConnected) {
+				if (g_wifiConnected) {
 						led_toggle(BLUE);
-						g_commConnected = 0;
+						g_wifiConnected = 0;
 				}
 				else
 						led_clear(BLUE);
@@ -95,6 +97,7 @@ int main()
 		UART_PRINT("========================================\r\n");
 
 		init_status = 0;
+		g_wifiConnected = false;
 		motors_init();
 		led_init();
 		if (!mpu6050_init(&init_status)) {
@@ -103,11 +106,13 @@ int main()
 		}
 
 		wifiDataLock = xSemaphoreCreateMutex();
-		wifiDataAvailable = false;
+		g_wifiDataAvailable = false;
 
 		VStartSimpleLinkSpawnTask(SPAWN_TASK_PRIORITY);
 
-		xTaskCreate(SerialControlTask, NULL, OSI_STACK_SIZE, (void *) NULL, 5, NULL);
+		//xTaskCreate(SerialControlTask, NULL, OSI_STACK_SIZE, (void *) NULL, 5, NULL);
+		xTaskCreate(StabilizerTask, NULL, OSI_STACK_SIZE, (void *) NULL, 5, NULL);
+		xTaskCreate(WifiConnectTask, NULL, OSI_STACK_SIZE, (void *) NULL, 5, NULL);
 
 		INFO("Starting FreeRTOS Scheduling");
 		vTaskStartScheduler();

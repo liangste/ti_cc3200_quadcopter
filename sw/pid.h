@@ -13,6 +13,9 @@ typedef struct pid_data {
 // initialize PID and set coefficients
 void pid_init(pid_data_t*, float k_p, float k_i, float k_d);
 
+// reset pid states
+void pid_reset(pid_data_t*);
+
 // update PID structure with current desired angle, measured angle, and angular
 // rate from gyro
 void pid_update(pid_data_t*, double desired, double measured, double rate);

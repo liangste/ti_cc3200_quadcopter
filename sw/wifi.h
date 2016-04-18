@@ -7,12 +7,12 @@
 void wifi_init(void);
 
 unsigned char g_wifiInitialized;    // initialization of Wifi sub system
-unsigned char g_wifiConnected;
-
-unsigned char g_commConnected;
+bool g_wifiConnected;
 
 SemaphoreHandle_t wifiDataLock;
-bool wifiDataAvailable;
+
+bool g_wifiDataAvailable;
+struct UdpCmd g_udpCmdRecvStruct;
 
 void WifiConnectTask(void *);
 

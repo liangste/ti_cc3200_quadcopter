@@ -5,7 +5,7 @@
 
 #define TIMER_INTERVAL_RELOAD   19890
 #define DUTYCYCLE_GRANULARITY   78
-#define MAX_THROTTLE_VALUE 255
+#define MAX_THROTTLE_VALUE 254
 #define MIN_THROTTLE_VALUE 0
 
 void motors_init();

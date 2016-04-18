@@ -32,7 +32,9 @@ typedef enum {
     STATUS_CODE_MAX = -0xBB8
 } e_AppStatusCodes;
 
-struct UdpCmd udpCmdRecvStruct;
+extern bool g_wifiConnected;
+extern bool g_wifiDataAvailable;
+extern struct UdpCmd g_udpCmdRecvStruct;
 
 char g_RecvBuf[RECV_BUF_SIZE];
 
@@ -427,14 +429,8 @@ void vUDPRecvTask(void *pvParameters) {
                  ( SlSockAddr_t *)&sAddr, (SlSocklen_t*)&iAddrSize );
             // now handle the buffer
         if (recvSize) {
-            g_commConnected = 1;
-            if (wifiDataLock != NULL) {
-                if (xSemaphoreTake(wifiDataLock, 1) == pdTRUE) {
-                    UdpCmd_read_delimited_from(g_RecvBuf, &udpCmdRecvStruct);
-                    wifiDataAvailable = true;
-                    xSemaphoreGive(wifiDataLock);
-                }
-            }
+            UdpCmd_read_delimited_from(g_RecvBuf, &g_udpCmdRecvStruct);
+            g_wifiDataAvailable = true;
         }
         vTaskDelay(1);
     }
@@ -468,6 +464,7 @@ void WifiConnectTask(void *pvParameters) {
         UART_PRINT("Connect a client to Device\n\r");
         while(!IS_IP_LEASED(g_ulStatus)) {}
         UART_PRINT("Client is connected to Device\n\r");
+        g_wifiConnected = true;
 
         wifi_recv_ticks = 0;
         // create a task here to handle connectoin
@@ -476,6 +473,5 @@ void WifiConnectTask(void *pvParameters) {
         while(g_wifiConnected){
             vTaskDelay(1);
         }
-        g_commConnected = 0;
     }
 }
