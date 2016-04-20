@@ -36,7 +36,7 @@ void SerialControlTask(void *params) {
 
     // these are parameters that require tuning per hardware platform
     float q_angle = 0.0001f; // decrease this if estimate is slow
-    float q_bias = 2.0f; // increate this is estimate is drifting
+    float q_bias = 0.2f; // increate this is estimate is drifting
     float r_measure = 0.003f; // decrease this if estimate is slow
 
     // set kalman filter variance values
@@ -77,12 +77,11 @@ void SerialControlTask(void *params) {
         gyro_angles.pitch += gyro_pitch_rate * dt;
         gyro_angles.roll += gyro_roll_rate * dt;
 
-        //kalman_update(&kf_pitch, angles.pitch, gyro_pitch_rate, dt);
-        //kalman_update(&kf_roll, angles.roll, gyro_roll_rate, dt);
+        kalman_update(&kf_pitch, angles.pitch, gyro_pitch_rate, dt);
+        kalman_update(&kf_roll, angles.roll, gyro_roll_rate, dt);
 
-        //pid_update(&pitch_pid, desired_pitch, kalman_get_angle(&kf_pitch), gyro_pitch_rate);
-        pid_update(&pitch_pid, desired_pitch, angles.pitch, gyro_pitch_rate);
-        pid_update(&roll_pid, desired_roll, angles.roll, gyro_roll_rate);
+        pid_update(&pitch_pid, desired_pitch, kalman_get_angle(&kf_pitch), gyro_pitch_rate);
+        pid_update(&roll_pid, desired_roll, kalman_get_angle(&kf_roll), gyro_roll_rate);
 
         cmd_length = GetCmd(cmd, 10);
         if (cmd_length > 0 && cmd_length < 10) {
@@ -102,16 +101,16 @@ void SerialControlTask(void *params) {
                 pid_reset(&roll_pid);
             } else {
                 // calculate throttle
-                m1 = motors_correct_throttle(throttle_value + pid_get_value(&roll_pid));
-                m2 = motors_correct_throttle(throttle_value - pid_get_value(&roll_pid));
-                m3 = motors_correct_throttle(throttle_value - pid_get_value(&pitch_pid));
-                m4 = motors_correct_throttle(throttle_value + pid_get_value(&pitch_pid));
+                m1 = motors_correct_throttle(throttle_value);
+                m2 = motors_correct_throttle(throttle_value);
+                m3 = motors_correct_throttle(throttle_value);
+                m4 = motors_correct_throttle(throttle_value);
             }
 
             motors_set_m1(m1);
             motors_set_m2(m2);
-            //motors_set_m3(m3);
-            //motors_set_m4(m4);
+            motors_set_m3(m3);
+            motors_set_m4(m4);
 
             // update sensor values
             UART_PRINT("%f %f %f %f %f %f %f %f %f %f %f %f %u %u %u %u\r\n",
@@ -145,6 +144,7 @@ void StabilizerTask(void *params) {
         kalman_filter_t kf_roll;
         pid_data_t pitch_pid;
         pid_data_t roll_pid;
+        pid_data_t yaw_pid;
         char cmd[10];
         int cmd_length;
         int32_t throttle_value = 0;
@@ -167,7 +167,7 @@ void StabilizerTask(void *params) {
 
         // these are parameters that require tuning per hardware platform
         float q_angle = 0.0001f; // decrease this if estimate is slow
-        float q_bias = 2.0f; // increate this is estimate is drifting
+        float q_bias = 0.2f; // increate this is estimate is drifting
         float r_measure = 0.003f; // decrease this if estimate is slow
 
         // set kalman filter variance values
@@ -175,18 +175,21 @@ void StabilizerTask(void *params) {
         kalman_set_variances(&kf_roll, q_angle, q_bias, r_measure);
 
         // PID updates
-        float k_p = 1.5f;
-        float k_i = 0.05f;
-        float k_d = 0.1f;
-        float r_k_p = 1.0f;
-        float r_k_i = 0.1f;
-        float r_k_d = 0.1f;
+        float k_p = 0.02f; // 2.0
+        float k_i = 0.11f; // 0.05
+        float k_d = 0.28f; //
+
+        float y_k_p = 0.0f;
+        float y_k_i = 0.000001f;
+        float y_k_d = 1.0f;
 
         double desired_pitch = 0.0f;
         double desired_roll = 0.0f;
+        double desired_yaw = 0.0f;
 
         pid_init(&pitch_pid, k_p, k_i, k_d);
-        pid_init(&roll_pid, r_k_p, r_k_i, r_k_d);
+        pid_init(&roll_pid, k_p, k_i, k_d);
+        pid_init(&yaw_pid, y_k_p, y_k_i, y_k_d);
 
     	while(1)
     	{
@@ -203,21 +206,24 @@ void StabilizerTask(void *params) {
 
             double gyro_pitch_rate = (double) sensor_value.gx / GYRO_SENSITIVITY;
             double gyro_roll_rate = (double) sensor_value.gy / GYRO_SENSITIVITY;
+            double gyro_yaw_rate = (double) sensor_value.gz / GYRO_SENSITIVITY;
 
             gyro_angles.pitch += gyro_pitch_rate * dt;
             gyro_angles.roll += gyro_roll_rate * dt;
+            gyro_angles.yaw += gyro_yaw_rate * dt;
 
             //kalman_update(&kf_pitch, angles.pitch, gyro_pitch_rate, dt);
             //kalman_update(&kf_roll, angles.roll, gyro_roll_rate, dt);
 
             pid_update(&pitch_pid, desired_pitch, angles.pitch, gyro_pitch_rate);
             pid_update(&roll_pid, desired_roll, angles.roll, gyro_roll_rate);
+            pid_update(&yaw_pid, desired_yaw, gyro_angles.yaw, gyro_yaw_rate);
 
             control_div++;
-            if (control_div == output_divider) {
+            //if (control_div == output_divider) {
                 led_toggle(ORANGE);
 
-                throttle_value = (int32_t) g_udpCmdRecvStruct._y_Left;
+                throttle_value = (int32_t) g_udpCmdRecvStruct._y_Left / 2;
 
                 if (throttle_value > MAX_THROTTLE_VALUE)
                     throttle_value = MAX_THROTTLE_VALUE;
@@ -228,27 +234,20 @@ void StabilizerTask(void *params) {
                     m1 = m2 = m3 = m4 = 0;
                     pid_reset(&pitch_pid);
                     pid_reset(&roll_pid);
+                    pid_reset(&yaw_pid);
                 } else {
                     // calculate throttle
-                    m1 = motors_correct_throttle(throttle_value + pid_get_value(&roll_pid));
-                    m2 = motors_correct_throttle(throttle_value - pid_get_value(&roll_pid));
-                    m3 = motors_correct_throttle(throttle_value - pid_get_value(&pitch_pid));
-                    m4 = motors_correct_throttle(throttle_value + pid_get_value(&pitch_pid));
+                    m1 = motors_correct_throttle(throttle_value + pid_get_value(&roll_pid) - pid_get_value(&yaw_pid));
+                    m2 = motors_correct_throttle(throttle_value - pid_get_value(&roll_pid) - pid_get_value(&yaw_pid));
+                    m3 = motors_correct_throttle(throttle_value - pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid));
+                    m4 = motors_correct_throttle(throttle_value + pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid));
                 }
                 motors_set_m1(m1);
                 motors_set_m2(m2);
                 motors_set_m3(m3);
                 motors_set_m4(m4);
 
-
                 control_div = 0;
-
-                UART_PRINT("%u %u %u %u %u\r\n",
-                    throttle_value,
-                    m1,
-                    m2,
-                    m3,
-                    m4);
-            }
+            //}
         }
     }
