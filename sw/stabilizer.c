@@ -175,9 +175,9 @@ void StabilizerTask(void *params) {
         kalman_set_variances(&kf_roll, q_angle, q_bias, r_measure);
 
         // PID updates
-        float k_p = 0.02f; // 2.0
-        float k_i = 0.11f; // 0.05
-        float k_d = 0.28f; //
+        float k_p = 0.015f; // 2.0
+        float k_i = 1.15f; // 0.05
+        float k_d = 0.21f; //
 
         float y_k_p = 0.0f;
         float y_k_i = 0.000001f;
@@ -215,39 +215,41 @@ void StabilizerTask(void *params) {
             //kalman_update(&kf_pitch, angles.pitch, gyro_pitch_rate, dt);
             //kalman_update(&kf_roll, angles.roll, gyro_roll_rate, dt);
 
+            throttle_value = (int32_t) g_udpCmdRecvStruct._y_Left / 2;
+
+            int32_t x_right = g_udpCmdRecvStruct._x_Right;
+            int32_t y_right = g_udpCmdRecvStruct._y_Right;
+
+            desired_roll = (float) g_udpCmdRecvStruct._x_Right / 255.0 * -5.0 / 180.0 * PI;
+            desired_pitch = (float) g_udpCmdRecvStruct._y_Right / 255.0 * 5.0 / 180.0 * PI;
+
             pid_update(&pitch_pid, desired_pitch, angles.pitch, gyro_pitch_rate);
             pid_update(&roll_pid, desired_roll, angles.roll, gyro_roll_rate);
             pid_update(&yaw_pid, desired_yaw, gyro_angles.yaw, gyro_yaw_rate);
 
-            control_div++;
-            //if (control_div == output_divider) {
-                led_toggle(ORANGE);
+            led_toggle(ORANGE);
 
-                throttle_value = (int32_t) g_udpCmdRecvStruct._y_Left / 2;
+            if (throttle_value > MAX_THROTTLE_VALUE)
+                throttle_value = MAX_THROTTLE_VALUE;
+            else if (throttle_value < MIN_THROTTLE_VALUE)
+                throttle_value = MIN_THROTTLE_VALUE;
 
-                if (throttle_value > MAX_THROTTLE_VALUE)
-                    throttle_value = MAX_THROTTLE_VALUE;
-                else if (throttle_value < MIN_THROTTLE_VALUE)
-                    throttle_value = MIN_THROTTLE_VALUE;
+            if (throttle_value == 0) {
+                m1 = m2 = m3 = m4 = 0;
+                pid_reset(&pitch_pid);
+                pid_reset(&roll_pid);
+                pid_reset(&yaw_pid);
+            } else {
+                // calculate throttle
+                m1 = motors_correct_throttle(throttle_value + pid_get_value(&roll_pid) - pid_get_value(&yaw_pid) + 5);
+                m2 = motors_correct_throttle(throttle_value - pid_get_value(&roll_pid) - pid_get_value(&yaw_pid));
+                m3 = motors_correct_throttle(throttle_value - pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid));
+                m4 = motors_correct_throttle(throttle_value + pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid));
+            }
 
-                if (throttle_value == 0) {
-                    m1 = m2 = m3 = m4 = 0;
-                    pid_reset(&pitch_pid);
-                    pid_reset(&roll_pid);
-                    pid_reset(&yaw_pid);
-                } else {
-                    // calculate throttle
-                    m1 = motors_correct_throttle(throttle_value + pid_get_value(&roll_pid) - pid_get_value(&yaw_pid));
-                    m2 = motors_correct_throttle(throttle_value - pid_get_value(&roll_pid) - pid_get_value(&yaw_pid));
-                    m3 = motors_correct_throttle(throttle_value - pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid));
-                    m4 = motors_correct_throttle(throttle_value + pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid));
-                }
-                motors_set_m1(m1);
-                motors_set_m2(m2);
-                motors_set_m3(m3);
-                motors_set_m4(m4);
-
-                control_div = 0;
-            //}
+            motors_set_m1(m1);
+            motors_set_m2(m2);
+            motors_set_m3(m3);
+            motors_set_m4(m4);
         }
     }
