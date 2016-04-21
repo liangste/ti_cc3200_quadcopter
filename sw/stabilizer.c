@@ -175,8 +175,8 @@ void StabilizerTask(void *params) {
         kalman_set_variances(&kf_roll, q_angle, q_bias, r_measure);
 
         // PID updates
-        float k_p = 0.015f; // 2.0
-        float k_i = 1.15f; // 0.05
+        float k_p = 0.02f; // 2.0
+        float k_i = 0.05f; // 0.05
         float k_d = 0.21f; //
 
         float y_k_p = 0.0f;
@@ -220,8 +220,8 @@ void StabilizerTask(void *params) {
             int32_t x_right = g_udpCmdRecvStruct._x_Right;
             int32_t y_right = g_udpCmdRecvStruct._y_Right;
 
-            desired_roll = (float) g_udpCmdRecvStruct._x_Right / 255.0 * -5.0 / 180.0 * PI;
-            desired_pitch = (float) g_udpCmdRecvStruct._y_Right / 255.0 * 5.0 / 180.0 * PI;
+            int32_t roll_ctrl = g_udpCmdRecvStruct._x_Right / 10;
+            int32_t pitch_ctrl = g_udpCmdRecvStruct._y_Right / 10;
 
             pid_update(&pitch_pid, desired_pitch, angles.pitch, gyro_pitch_rate);
             pid_update(&roll_pid, desired_roll, angles.roll, gyro_roll_rate);
@@ -241,10 +241,10 @@ void StabilizerTask(void *params) {
                 pid_reset(&yaw_pid);
             } else {
                 // calculate throttle
-                m1 = motors_correct_throttle(throttle_value + pid_get_value(&roll_pid) - pid_get_value(&yaw_pid) + 5);
-                m2 = motors_correct_throttle(throttle_value - pid_get_value(&roll_pid) - pid_get_value(&yaw_pid));
-                m3 = motors_correct_throttle(throttle_value - pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid));
-                m4 = motors_correct_throttle(throttle_value + pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid));
+                m1 = motors_correct_throttle(throttle_value + pid_get_value(&roll_pid) - pid_get_value(&yaw_pid) + 5 - roll_ctrl);
+                m2 = motors_correct_throttle(throttle_value - pid_get_value(&roll_pid) - pid_get_value(&yaw_pid) + roll_ctrl);
+                m3 = motors_correct_throttle(throttle_value - pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid) - pitch_ctrl);
+                m4 = motors_correct_throttle(throttle_value + pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid) + pitch_ctrl);
             }
 
             motors_set_m1(m1);
