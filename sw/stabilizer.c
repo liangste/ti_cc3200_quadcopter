@@ -223,6 +223,13 @@ void StabilizerTask(void *params) {
             int32_t roll_ctrl = g_udpCmdRecvStruct._x_Right / 10;
             int32_t pitch_ctrl = g_udpCmdRecvStruct._y_Right / 10;
 
+            if (pitch_ctrl != 0) {
+                pid_reset(&pitch_pid);
+            }
+            if (roll_ctrl != 0) {
+                pid_reset(&roll_pid);
+            }
+
             pid_update(&pitch_pid, desired_pitch, angles.pitch, gyro_pitch_rate);
             pid_update(&roll_pid, desired_roll, angles.roll, gyro_roll_rate);
             pid_update(&yaw_pid, desired_yaw, gyro_angles.yaw, gyro_yaw_rate);
@@ -246,6 +253,8 @@ void StabilizerTask(void *params) {
                 m3 = motors_correct_throttle(throttle_value - pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid) - pitch_ctrl);
                 m4 = motors_correct_throttle(throttle_value + pid_get_value(&pitch_pid) + pid_get_value(&yaw_pid) + pitch_ctrl);
             }
+
+            UART_PRINT("throttle %d m1->m4 = %d %d %d %d, roll_pid %d pitch_pid %d\r\n", throttle_value, m1, m2, m3, m4, pid_get_value(&roll_pid), pid_get_value(&pitch_pid));
 
             motors_set_m1(m1);
             motors_set_m2(m2);

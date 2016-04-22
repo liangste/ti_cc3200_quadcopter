@@ -17,6 +17,7 @@ void pid_reset(pid_data_t* p) {
 
 void pid_update(pid_data_t* p, double desired, double measured, double rate) {
     double error = desired - measured;
+
     p->error_sum += error;
 
     double tmp = p->k_p * error + p->k_i * p->error_sum - p->k_d * rate;
@@ -26,4 +27,8 @@ void pid_update(pid_data_t* p, double desired, double measured, double rate) {
 // get correction value
 int32_t pid_get_value(pid_data_t* p) {
     return p->value;
+}
+
+void pid_error_reset(pid_data_t* p) {
+    p->error_sum = 0;
 }

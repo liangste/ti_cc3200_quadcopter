@@ -118,6 +118,7 @@ int main()
 		vTaskStartScheduler();
 
 LOOP_FOREVER:
+		led_set(BLUE);
 		motors_set_m1(0);
 		motors_set_m2(0);
 		motors_set_m3(0);

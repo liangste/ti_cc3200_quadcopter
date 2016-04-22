@@ -461,6 +461,7 @@ void WifiConnectTask(void *pvParameters) {
             LOOP_FOREVER();
         }
 
+        led_set(GREEN);
         UART_PRINT("Connect a client to Device\n\r");
         while(!IS_IP_LEASED(g_ulStatus)) {}
         UART_PRINT("Client is connected to Device\n\r");

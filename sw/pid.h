@@ -23,4 +23,6 @@ void pid_update(pid_data_t*, double desired, double measured, double rate);
 // correct throttle with this pid
 int32_t pid_get_value(pid_data_t*);
 
+void pid_error_reset(pid_data_t*);
+
 #endif __PID_H__
