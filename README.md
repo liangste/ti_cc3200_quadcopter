@@ -14,3 +14,7 @@ Most "cotrol" related components are routed to the top of the PCB. The board mea
 While "Power" related components are routed to the bottom. Note that there are 4 Mosfets placed in each corner, one for each DC motors.
 
 <img src="./pictures/quadcopter_bottom_view.jpg" width="640">
+
+While developing the sw, I also made a simple PyQt app for visualizing the measured and calculated sensor readings from the quadcopter. This "tester" app, as I call it, was important for developing Kalman filter for accelerometer and gyroscope readings.
+
+<img src="./pictures/pyqt_quadcopter_tester.png" width="960">
