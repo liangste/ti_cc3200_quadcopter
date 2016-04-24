@@ -18,3 +18,7 @@ While "Power" related components are routed to the bottom. Note that there are 4
 While developing the sw, I also made a simple PyQt app for visualizing the measured and calculated sensor readings from the quadcopter. This "tester" app, as I call it, was important for developing Kalman filter for accelerometer and gyroscope readings.
 
 <img src="./pictures/pyqt_quadcopter_tester.png" width="960">
+
+Here's picture showing the "evolution" of this quadcopter. On the left we have the original CC3200 development board, on which my board designs were based. In the middle is the first version of the PCB. It was functional, but had several shortcomings that motivated me to develop another version. On the right, you see the final version with much smaller PCB mounted on a chasis that I made on SolidWorks and printed out using a local 3D printer.
+
+<img src="./pictures/evolution.jpg" width="960">
