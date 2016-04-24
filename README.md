@@ -5,8 +5,12 @@ This is a project I started to develop a small quadcopter that I can control thr
 
 [Here's a video of it flying](https://youtu.be/NUO0UMu_Gpo)
 
-Most "cotrol" related components are routed to the top of the PCB.
+[Here's a video of making Wifi connection through a smartphone](https://youtu.be/c3Ppp-kUkaQ)
+
+Most "cotrol" related components are routed to the top of the PCB. The board measure 4cm x 4cm and contains 4 copper layers.
+
 <img src="./pictures/quadcopter_top_view.jpg" width="640">
 
-While "Power" related components are routed to the bottom.
+While "Power" related components are routed to the bottom. Note that there are 4 Mosfets placed in each corner, one for each DC motors.
+
 <img src="./pictures/quadcopter_bottom_view.jpg" width="640">
