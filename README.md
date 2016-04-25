@@ -11,7 +11,7 @@ Most "control" related components are routed to the top of the PCB. The board me
 
 <img src="./pictures/quadcopter_top_view.jpg" width="640">
 
-While "Power" related components are routed to the bottom. Note that there are 4 Mosfets placed in each corner, one for each DC motors.
+While "Power" related components are routed to the bottom. Note that there are 4 MOSFETs placed in each corner, one for each DC motors.
 
 <img src="./pictures/quadcopter_bottom_view.jpg" width="640">
 
